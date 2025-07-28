@@ -4,149 +4,222 @@ import * as z from 'zod'
 
 dotenv.config({ quiet: true })
 
-const ListItem = z.object({
-  id: z.uuidv4(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-  body: z.string(),
-})
-type ListItemT = z.infer<typeof ListItem>
-
 const db = new pg.Pool({
   connectionString: process.env.POSTGRES_CONNECTION_STRING,
   allowExitOnIdle: true,
 })
 
-const CreateListItemInput = ListItem.pick({ body: true })
-type CreateListItemInputT = z.infer<typeof CreateListItemInput>
-const CreateListItemOutput = ListItem.pick({ id: true })
-type CreateListItemOutputT = z.infer<typeof CreateListItemOutput>
-async function createListItem(listItemInput: CreateListItemInputT) {
-  listItemInput = CreateListItemInput.parse(listItemInput)
+const ListItem = z.object({
+  id: z.uuidv4(),
+  created_at: z.date(),
+  updated_at: z.date(),
+  body: z.string(),
+})
 
-  const now = new Date()
+type ResultSchema = z.ZodObject<{
+  command: z.ZodLiteral<'INSERT'> | z.ZodLiteral<'SELECT'> | z.ZodLiteral<'UPDATE'> | z.ZodLiteral<'DELETE'>
+  rowCount: z.ZodLiteral<number> | z.ZodNumber
+  rows: z.ZodTuple<z.ZodObject[]> | z.ZodArray<z.ZodObject> | z.ZodArray<z.ZodUnknown>
+}>
 
-  let listItem: ListItemT = {
-    id: crypto.randomUUID(),
-    createdAt: now,
-    updatedAt: now,
-    ...listItemInput,
-  }
-
-  listItem = ListItem.parse(listItem)
-
-  const resultPromise = db.query<CreateListItemOutputT>(
-    `INSERT INTO to_do (id, created_at, updated_at, body) VALUES ($1, $2, $3, $4) RETURNING id`,
-    [listItem.id, listItem.createdAt, listItem.updatedAt, listItem.body],
-  )
-
-  const result = await resultPromise
-
-  const output = CreateListItemOutput.parse(result.rows[0])
-
-  console.log(output)
+const schema = {
+  create: {
+    Input: ListItem.pick({ body: true }),
+    Query: ListItem,
+    Result: z.object({
+      command: z.literal('INSERT'),
+      rowCount: z.literal(1),
+      rows: z.tuple([ListItem.pick({ id: true })]),
+    }) satisfies ResultSchema,
+    Output: ListItem.pick({ id: true }),
+  },
+  read: {
+    Input: ListItem.pick({ id: true }).partial(),
+    Query: ListItem.pick({ id: true }).partial(),
+    Result: z.object({
+      command: z.literal('SELECT'),
+      rowCount: z.number(),
+      rows: z.array(ListItem),
+    }) satisfies ResultSchema,
+    Output: z.array(ListItem),
+  },
+  update: {
+    Input: ListItem.pick({ id: true, body: true }),
+    Query: ListItem.omit({ created_at: true }),
+    Result: z.object({
+      command: z.literal('UPDATE'),
+      rowCount: z.literal(1),
+      rows: z.tuple([ListItem.pick({ id: true, updated_at: true })]),
+    }) satisfies ResultSchema,
+    Output: ListItem.pick({ id: true, updated_at: true }),
+  },
+  delete: {
+    Input: ListItem.pick({ id: true }),
+    Query: ListItem.pick({ id: true }),
+    Result: z.object({
+      command: z.literal('DELETE'),
+      rowCount: z.literal(1),
+      rows: z.array(z.unknown()),
+    }) satisfies ResultSchema,
+    Output: z.number(),
+  },
 }
 
-const ReadListItemInput = ListItem.pick({ id: true }).partial()
-type ReadListItemInputT = z.infer<typeof ReadListItemInput>
-const ReadListItemOutput = z.array(ListItem)
-type ReadListItemOutputT = z.infer<typeof ReadListItemOutput>
-async function readListItem(listItemInput: ReadListItemInputT) {
-  listItemInput = ReadListItemInput.parse(listItemInput)
-
-  const query: {
-    sql: string
-    values: string[]
-  } = {
-    sql: '',
-    values: [],
+type Schema = {
+  create: {
+    Input: z.infer<typeof schema['create']['Input']>
+    Query: z.infer<typeof schema['create']['Query']>
+    Result: z.infer<typeof schema['create']['Result']>
+    Output: z.infer<typeof schema['create']['Output']>
   }
-
-  if (listItemInput.id) {
-    query.sql = `SELECT id, created_at "createdAt", updated_at "updatedAt", body FROM to_do WHERE id = $1`
-    query.values = [listItemInput.id]
+  read: {
+    Input: z.infer<typeof schema['read']['Input']>
+    Query: z.infer<typeof schema['read']['Query']>
+    Result: z.infer<typeof schema['read']['Result']>
+    Output: z.infer<typeof schema['read']['Output']>
   }
-  else {
-    query.sql = `SELECT id, created_at "createdAt", updated_at "updatedAt", body FROM to_do`
+  update: {
+    Input: z.infer<typeof schema['update']['Input']>
+    Query: z.infer<typeof schema['update']['Query']>
+    Result: z.infer<typeof schema['update']['Result']>
+    Output: z.infer<typeof schema['update']['Output']>
   }
-
-  const resultPromise = db.query<ReadListItemOutputT>(query.sql, query.values)
-
-  const result = await resultPromise
-
-  const output = ReadListItemOutput.parse(result.rows)
-
-  console.log(output)
+  delete: {
+    Input: z.infer<typeof schema['delete']['Input']>
+    Query: z.infer<typeof schema['delete']['Query']>
+    Result: z.infer<typeof schema['delete']['Result']>
+    Output: z.infer<typeof schema['delete']['Output']>
+  }
 }
 
-const UpdateListItemInput = ListItem.pick({ id: true, body: true })
-type UpdateListItemInputT = z.infer<typeof UpdateListItemInput>
-const UpdateListItemOutput = ListItem.pick({ id: true, updatedAt: true })
-type UpdateListItemOutputT = z.infer<typeof UpdateListItemOutput>
-async function updateListItem(listItemInput: UpdateListItemInputT) {
-  listItemInput = UpdateListItemInput.parse(listItemInput)
+const model = {
+  create: async (query: Schema['create']['Query']) => {
+    const sql = `INSERT INTO to_do (id, created_at, updated_at, body) VALUES ($1, $2, $3, $4) RETURNING id`
+    const values = [query.id, query.created_at, query.updated_at, query.body]
 
-  const now = new Date()
+    const resultPromise = db.query(sql, values)
 
-  let listItem: Omit<ListItemT, 'createdAt'> = {
-    id: listItemInput.id,
-    body: listItemInput.body,
-    updatedAt: now,
-  }
+    const result = schema.create.Result.parse(await resultPromise)
 
-  listItem = ListItem.omit({ createdAt: true }).parse(listItem)
+    return result
+  },
+  read: async (query: Schema['read']['Query']) => {
+    let sql = ''
+    let values: string[] = []
 
-  const resultPromise = db.query<UpdateListItemOutputT>(
-    `UPDATE to_do SET body = $1, updated_at = $2 WHERE id = $3 RETURNING id, updated_at "updatedAt"`,
-    [listItem.body, listItem.updatedAt, listItem.id],
-  )
+    if (query.id) {
+      sql = `SELECT id, created_at, updated_at, body FROM to_do WHERE id = $1`
+      values = [query.id]
+    }
+    else {
+      sql = `SELECT id, created_at, updated_at, body FROM to_do`
+    }
 
-  const result = await resultPromise
+    const resultPromise = db.query(sql, values)
 
-  const output = UpdateListItemOutput.parse(result.rows[0])
+    const result = schema.read.Result.parse(await resultPromise)
 
-  console.log(output)
+    return result
+  },
+  update: async (query: Schema['update']['Query']) => {
+    const sql = `UPDATE to_do SET body = $1, updated_at = $2 WHERE id = $3 RETURNING id, updated_at`
+    const values = [query.body, query.updated_at, query.id]
+
+    const resultPromise = db.query(sql, values)
+
+    const result = schema.update.Result.parse(await resultPromise)
+
+    return result
+  },
+  delete: async (query: Schema['delete']['Query']) => {
+    const sql = `DELETE FROM to_do WHERE id = $1`
+    const values = [query.id]
+
+    const resultPromise = db.query<QueryResultRow>(sql, values)
+
+    const result = schema.delete.Result.parse(await resultPromise)
+
+    return result
+  },
 }
 
-const DeleteListItemInput = ListItem.pick({ id: true })
-type DeleteListItemInputT = z.infer<typeof DeleteListItemInput>
-const DeleteListItemOutput = z.number()
-async function deleteListItem(listItemInput: DeleteListItemInputT) {
-  listItemInput = DeleteListItemInput.parse(listItemInput)
+const controller = {
+  create: async (input: Schema['create']['Input']) => {
+    input = schema.create.Input.parse(input)
 
-  const resultPromise = db.query<QueryResultRow>(
-    `DELETE FROM to_do WHERE id = $1`,
-    [listItemInput.id],
-  )
+    const now = new Date()
+    const query = schema.create.Query.parse({
+      id: crypto.randomUUID(),
+      created_at: now,
+      updated_at: now,
+      body: input.body,
+    })
 
-  const result = await resultPromise
+    const result = await model.create(query)
 
-  const output = DeleteListItemOutput.parse(result.rowCount)
+    const output = schema.create.Output.parse(result.rows[0])
 
-  console.log(output)
+    console.log(output)
+  },
+  read: async (input: Schema['read']['Input']) => {
+    input = schema.read.Input.parse(input)
+    const query = schema.read.Query.parse(input)
+
+    const result = await model.read(query)
+
+    const output = schema.read.Output.parse(result.rows)
+
+    console.log(output)
+  },
+  update: async (input: Schema['update']['Input']) => {
+    input = schema.update.Input.parse(input)
+
+    const now = new Date()
+    const query = schema.update.Query.parse({
+      id: input.id,
+      body: input.body,
+      updated_at: now,
+    })
+
+    const result = await model.update(query)
+
+    const output = schema.update.Output.parse(result.rows[0])
+
+    console.log(output)
+  },
+  delete: async (input: Schema['delete']['Input']) => {
+    input = schema.delete.Input.parse(input)
+    const query = schema.delete.Query.parse(input)
+
+    const result = await model.delete(query)
+
+    const output = schema.delete.Output.parse(result.rowCount)
+
+    console.log(output)
+  },
 }
 
 const [command, value, valueTwo] = process.argv.slice(2)
 
 switch (command) {
   case 'create':
-    void createListItem({
+    void controller.create({
       body: value,
     })
     break
   case 'read':
-    void readListItem({
+    void controller.read({
       id: value,
     })
     break
   case 'update':
-    void updateListItem({
+    void controller.update({
       id: value,
       body: valueTwo,
     })
     break
   case 'delete':
-    void deleteListItem({
+    void controller.delete({
       id: value,
     })
     break
