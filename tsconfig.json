@@ -2,8 +2,8 @@
   "compilerOptions": {
     "lib": ["esnext"],
     "target": "esnext",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
+    "module": "esnext",
+    "moduleResolution": "bundler",
 
     "esModuleInterop": true,
     "resolveJsonModule": true,
@@ -16,6 +16,6 @@
     "outDir": "dist"
   },
   "include": [
-    "*.ts"
+    "**/*.ts"
   ]
 }

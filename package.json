@@ -1,22 +1,23 @@
 {
   "scripts": {
-    "dev": "tsx watch",
-    "lint": "eslint .",
+    "build": "tsc",
     "check": "tsc --noEmit",
-    "build": "tsc"
+    "dev": "tsx watch",
+    "lint": "eslint ."
   },
   "dependencies": {
+    "better-sqlite3": "^12.2.0",
+    "zod": "^4.0.10"
+  },
+  "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@stylistic/eslint-plugin": "^5.2.2",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.1.0",
-    "@types/pg": "^8.15.4",
-    "dotenv": "^17.2.1",
     "eslint": "^9.32.0",
-    "pg": "^8.16.3",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.38.0",
-    "zod": "^4.0.10"
+    "typescript-eslint": "^8.38.0"
   },
   "type": "module"
 }
