@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3'
 
-const db = new Database('database')
+export const db = new Database('database')
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS to_do (
@@ -10,5 +10,3 @@ db.exec(`
     body TEXT UNIQUE
   )
 `)
-
-export default db

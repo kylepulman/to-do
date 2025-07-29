@@ -13,9 +13,11 @@
     "useUnknownInCatchVariables": true,
     "verbatimModuleSyntax": true,
 
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+
     "outDir": "dist"
   },
-  "include": [
-    "**/*.ts"
-  ]
+  "include": ["./src"]
 }
