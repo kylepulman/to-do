@@ -10,13 +10,13 @@ function fallback() {
 }
 
 switch (command) {
-  case 'create': create(input)
+  case 'create': void create(input)
     break
-  case 'read': read(input)
+  case 'read': void read(input)
     break
-  case 'update': update(input)
+  case 'update': void update(input)
     break
-  case 'delete': obliterate(input)
+  case 'delete': void obliterate(input)
     break
   default: fallback()
     break

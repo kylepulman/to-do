@@ -5,17 +5,20 @@ import read from './read'
 import update from './update'
 
 const PORT = 3000
-
-function fallback(_request: http.IncomingMessage, response: http.ServerResponse) {
-  response.statusCode = 404
-  response.end('Not Found')
-}
+const LISTENING = `[SERVER] Listening on port %d...`
 
 const server = http.createServer((request, response) => {
-  if (!request.url) {
+  if (!request.url || !request.method) {
     response.statusCode = 400
     response.end('Bad Request')
     return
+  }
+
+  console.log(`${request.method}${' '.repeat(6 - request.method.length)} ${request.url}`)
+
+  function fallback(_request: http.IncomingMessage, response: http.ServerResponse) {
+    response.statusCode = 404
+    response.end('Not Found')
   }
 
   switch (request.method) {
@@ -32,6 +35,18 @@ const server = http.createServer((request, response) => {
   }
 })
 
-server.listen(PORT, () => {
-  console.log(`Listening on port %d...`, PORT)
+server.listen(PORT)
+
+server.on('listening', () => {
+  console.log(LISTENING, PORT)
+})
+
+server.on('error', (error) => {
+  if ('code' in error && error.code === 'EADDRINUSE') {
+    console.log(LISTENING, PORT)
+    process.exit(0)
+  }
+  else {
+    console.error('[SERVER]', error)
+  }
 })
