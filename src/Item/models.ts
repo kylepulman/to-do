@@ -12,7 +12,10 @@ export function create(body: type.CreateInput) {
     body,
   ])
 
-  return schema.Create.result.parse(sql.insert.get(...query))
+  return schema
+    .Create
+    .result
+    .parse(sql.insert.get(...query))
 }
 
 export function read(id: type.ReadInput) {
@@ -34,7 +37,10 @@ export function update(input: type.UpdateInput) {
     input.id,
   ])
 
-  return schema.Update.result.parse(sql.updateById.get(...query))
+  return schema
+    .Update
+    .result
+    .parse(sql.updateById.get(...query))
 }
 
 export function obliterate(id: type.DeleteInput) {
@@ -42,5 +48,8 @@ export function obliterate(id: type.DeleteInput) {
     id,
   ])
 
-  return schema.Delete.result.parse(sql.deleteById.run(...query).changes)
+  return schema
+    .Delete
+    .result
+    .parse(sql.deleteById.run(...query).changes)
 }

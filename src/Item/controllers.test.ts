@@ -1,7 +1,7 @@
 import test from 'node:test'
 
 import * as database from '@/database'
-import * as controller from './index'
+import * as controller from './controllers'
 import * as schema from './schema'
 
 let id = ''
