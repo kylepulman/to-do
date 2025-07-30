@@ -28,15 +28,11 @@ export function read(id: type.ReadInput) {
 }
 
 export function update(input: type.UpdateInput) {
-  console.log('input', input)
-
   const query = schema.Update.query.parse([
     input.body,
     new Date().toISOString(),
     input.id,
   ])
-
-  console.log('query', query)
 
   return schema.Update.result.parse(sql.updateById.get(...query))
 }
