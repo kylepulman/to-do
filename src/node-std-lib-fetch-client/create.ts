@@ -1,5 +1,5 @@
 import * as global from '@/globals'
-import * as Item from '@/Item'
+import * as Item from '@/node-std-lib-item-model'
 
 export async function create(body: Item.type.CreateInput) {
   console.log('body', body)

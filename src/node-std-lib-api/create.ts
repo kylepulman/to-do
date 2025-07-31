@@ -1,9 +1,12 @@
 import http from 'node:http'
 
-import * as Item from '@/Item'
+import * as Item from '@/node-std-lib-item-model'
 import * as utility from './utilities'
 
-export default async function create(request: http.IncomingMessage, response: http.ServerResponse) {
+export default async function create(
+  request: http.IncomingMessage,
+  response: http.ServerResponse,
+) {
   const body = await utility
     .getBody(request)
     .then(body => JSON.parse(body) as Record<'body', unknown>)

@@ -1,6 +1,6 @@
 import http from 'node:http'
 
-import * as Item from '@/Item'
+import * as Item from '@/node-std-lib-item-model'
 import * as utility from './utilities'
 
 export default function obliterate(request: http.IncomingMessage, response: http.ServerResponse) {

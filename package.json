@@ -2,7 +2,7 @@
   "scripts": {
     "build": "tsc",
     "check": "tsc --noEmit",
-    "dev": "tsx watch",
+    "dev": "tsx watch src/node-std-lib-api",
     "lint": "eslint ."
   },
   "dependencies": {

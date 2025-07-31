@@ -1,7 +1,7 @@
 import test from 'node:test'
 
 import * as database from '@/database'
-import * as Item from '@/Item'
+import * as Item from '@/node-std-lib-item-model'
 import * as client from '.'
 
 let id = ''

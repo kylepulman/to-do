@@ -1,4 +1,4 @@
-import * as client from '@/client'
+import * as client from '@/node-std-lib-fetch-client'
 
 export default async function update([id, body]: string[]) {
   const output = await client.update({
